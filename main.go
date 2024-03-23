@@ -6,35 +6,37 @@ import (
 	"time"
 )
 
-// Player struct to represent a player
-type Player struct {
-	ID     int
-	Dices  []int
-	Points int
+// Pemain struct untuk menyimpan data pemain
+type Pemain struct {
+	ID   int
+	Dadu []int
+	Poin int
 }
 
-// RollDices rolls dices for each player
-func RollDices(players []*Player) {
-	for _, player := range players {
-		for i := range player.Dices {
-			player.Dices[i] = rand.Intn(6) + 1
+// LemparDadu lempar dadu untuk semua pemain
+func LemparDadu(pemains []*Pemain) {
+	for _, pemain := range pemains {
+		for i := range pemain.Dadu {
+			pemain.Dadu[i] = rand.Intn(6) + 1
 		}
 	}
 }
 
-// EvaluateDices evaluates the dices rolled by each player
-func EvaluateDices(players []*Player) {
-	for _, player := range players {
-		for i := 0; i < len(player.Dices); i++ {
-			switch player.Dices[i] {
+// EvaluasiDadu evaluasi dadu untuk semua pemain
+func EvaluasiDadu(pemains []*Pemain) {
+	for _, pemain := range pemains {
+		if len(pemain.Dadu) == 0 {
+			continue
+		}
+
+		for i := 0; i < len(pemain.Dadu); i++ {
+			switch pemain.Dadu[i] {
 			case 6:
-				player.Points++
-				player.Dices = append(player.Dices[:i], player.Dices[i+1:]...)
+				pemain.Poin++
+				pemain.Dadu = append(pemain.Dadu[:i], pemain.Dadu[i+1:]...)
 				i--
 			case 1:
-				nextPlayerID := (player.ID + 1) % len(players)
-				players[nextPlayerID].Dices = append(players[nextPlayerID].Dices, 1)
-				player.Dices = append(player.Dices[:i], player.Dices[i+1:]...)
+				pemain.Dadu = append(pemain.Dadu[:i], pemain.Dadu[i+1:]...)
 				i--
 			}
 		}
@@ -44,84 +46,92 @@ func EvaluateDices(players []*Player) {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	var numPlayers, numDices int
+	var jumlahPemain, jumlahDadu int
 	fmt.Print("Pemain = ")
-	fmt.Scanln(&numPlayers)
+	scanPemain, err := fmt.Scanln(&jumlahPemain)
+	if err != nil || scanPemain != 1 || jumlahPemain < 2 {
+		fmt.Println("Input harus berupa angka dan minimal 2 pemain.")
+		return
+	}
 	fmt.Print("Dadu = ")
-	fmt.Scanln(&numDices)
+	scanDadu, err := fmt.Scanln(&jumlahDadu)
+	if err != nil || scanDadu != 1 || jumlahDadu < 1 {
+		fmt.Println("Input harus berupa angka dan minimal 1 dadu.")
+		return
+	}
 
-	// Initialize players
-	players := make([]*Player, numPlayers)
-	for i := range players {
-		players[i] = &Player{
-			ID:    i,
-			Dices: make([]int, numDices),
+	// Inisialisasi pemain
+	pemains := make([]*Pemain, jumlahPemain)
+	for i := range pemains {
+		pemains[i] = &Pemain{
+			ID:   i,
+			Dadu: make([]int, jumlahDadu),
 		}
 	}
 
-	// Game loop
+	// Main game
 	round := 1
 	for {
 		fmt.Printf("==================\nGiliran %d lempar dadu:\n", round)
 
-		RollDices(players)
-		for _, player := range players {
+		LemparDadu(pemains)
+		for _, pemain := range pemains {
 			dicesStr := ""
-			if len(player.Dices) == 0 {
+			if len(pemain.Dadu) == 0 {
 				dicesStr = "_ (Berhenti bermain karena tidak memiliki dadu)"
 			} else {
-				for i, dice := range player.Dices {
+				for i, dice := range pemain.Dadu {
 					if i > 0 {
 						dicesStr += ", "
 					}
 					dicesStr += fmt.Sprintf("%d", dice)
 				}
 			}
-			fmt.Printf("Pemain #%d (%d): %v\n", player.ID+1, player.Points, dicesStr)
+			fmt.Printf("Pemain #%d (%d): %v\n", pemain.ID+1, pemain.Poin, dicesStr)
 		}
 
-		EvaluateDices(players)
+		EvaluasiDadu(pemains)
 		fmt.Println("Setelah evaluasi:")
-		for _, player := range players {
+		for _, pemain := range pemains {
 			dicesStr := ""
-			if len(player.Dices) == 0 {
+			if len(pemain.Dadu) == 0 {
 				dicesStr = "_ (Berhenti bermain karena tidak memiliki dadu)"
 			} else {
-				for i, dice := range player.Dices {
+				for i, dice := range pemain.Dadu {
 					if i > 0 {
 						dicesStr += ", "
 					}
 					dicesStr += fmt.Sprintf("%d", dice)
 				}
 			}
-			fmt.Printf("Pemain #%d (%d): %v\n", player.ID+1, player.Points, dicesStr)
+			fmt.Printf("Pemain #%d (%d): %v\n", pemain.ID+1, pemain.Poin, dicesStr)
 		}
 
-		// Check if game ends
+		// Cek apakah hanya ada satu pemain yang memiliki dadu, jika ya maka game berakhir
 		activePlayers := 0
-		var winner *Player
-		for _, player := range players {
-			if len(player.Dices) > 0 {
+		var pemainTersisa *Pemain
+		for _, pemain := range pemains {
+			if len(pemain.Dadu) > 0 {
 				activePlayers++
-				winner = player
+				pemainTersisa = pemain
 			}
 		}
 		if activePlayers == 1 {
-			fmt.Printf("==================\nGame berakhir karena hanya pemain #%d yang memiliki dadu.\n", winner.ID+1)
+			fmt.Printf("==================\nGame berakhir karena hanya pemain #%d yang memiliki dadu.\n", pemainTersisa.ID+1)
 			break
 		}
 
 		round++
 	}
 
-	// Determine winner
-	maxPoints := 0
-	var gameWinner *Player
-	for _, player := range players {
-		if player.Points > maxPoints {
-			maxPoints = player.Points
-			gameWinner = player
+	// Cari pemain dengan poin terbanyak
+	poinTerbanyak := 0
+	var pemenang *Pemain
+	for _, player := range pemains {
+		if player.Poin > poinTerbanyak {
+			poinTerbanyak = player.Poin
+			pemenang = player
 		}
 	}
-	fmt.Printf("Game dimenangkan oleh pemain #%d karena memiliki poin lebih banyak dari pemain lainnya.\n", gameWinner.ID+1)
+	fmt.Printf("Game dimenangkan oleh pemain #%d karena memiliki poin lebih banyak dari pemain lainnya.\n", pemenang.ID+1)
 }
