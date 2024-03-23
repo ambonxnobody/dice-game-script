@@ -24,11 +24,9 @@ func LemparDadu(pemains []*Pemain) {
 
 // EvaluasiDadu evaluasi dadu untuk semua pemain
 func EvaluasiDadu(pemains []*Pemain) {
+	var toAddToTheNextPlayers []int
 	for _, pemain := range pemains {
-		if len(pemain.Dadu) == 0 {
-			continue
-		}
-
+		var toAddToTheNextPlayer int
 		for i := 0; i < len(pemain.Dadu); i++ {
 			switch pemain.Dadu[i] {
 			case 6:
@@ -36,8 +34,41 @@ func EvaluasiDadu(pemains []*Pemain) {
 				pemain.Dadu = append(pemain.Dadu[:i], pemain.Dadu[i+1:]...)
 				i--
 			case 1:
+				toAddToTheNextPlayer++
 				pemain.Dadu = append(pemain.Dadu[:i], pemain.Dadu[i+1:]...)
 				i--
+			}
+		}
+
+		toAddToTheNextPlayers = append(toAddToTheNextPlayers, toAddToTheNextPlayer)
+	}
+
+	for i := 0; i < len(toAddToTheNextPlayers); i++ {
+		if toAddToTheNextPlayers[i] > 0 {
+			for j := 0; j < toAddToTheNextPlayers[i]; j++ {
+				if i+1 < len(pemains) && len(pemains[i+1].Dadu) > 0 {
+					pemains[i+1].Dadu = append(pemains[i+1].Dadu, 1)
+				} else if i+1 < len(pemains) && len(pemains[i+1].Dadu) == 0 {
+					found := false
+					for k := i + 2; k < len(pemains); k++ {
+						if len(pemains[k].Dadu) > 0 {
+							pemains[k].Dadu = append(pemains[k].Dadu, 1)
+							found = true
+							break
+						}
+					}
+
+					if !found {
+						for k := 0; k < i; k++ {
+							if len(pemains[k].Dadu) > 0 {
+								pemains[k].Dadu = append(pemains[k].Dadu, 1)
+								break
+							}
+						}
+					}
+				} else {
+					pemains[0].Dadu = append(pemains[0].Dadu, 1)
+				}
 			}
 		}
 	}
@@ -126,12 +157,27 @@ func main() {
 
 	// Cari pemain dengan poin terbanyak
 	poinTerbanyak := 0
-	var pemenang *Pemain
+	var pemenang []*Pemain
 	for _, player := range pemains {
-		if player.Poin > poinTerbanyak {
+		if player.Poin >= poinTerbanyak {
 			poinTerbanyak = player.Poin
-			pemenang = player
 		}
 	}
-	fmt.Printf("Game dimenangkan oleh pemain #%d karena memiliki poin lebih banyak dari pemain lainnya.\n", pemenang.ID+1)
+
+	for _, player := range pemains {
+		if player.Poin == poinTerbanyak {
+			pemenang = append(pemenang, player)
+		}
+	}
+
+	if len(pemenang) > 1 {
+		fmt.Println("Game dimenangkan oleh pemain-pemain berikut karena memiliki poin yang sama:")
+		for _, player := range pemenang {
+			fmt.Printf("Pemain #%d\n", player.ID+1)
+		}
+		return
+	} else if len(pemenang) == 1 {
+		fmt.Printf("Game dimenangkan oleh pemain #%d karena memiliki poin lebih banyak dari pemain lainnya.\n", pemenang[0].ID+1)
+		return
+	}
 }
